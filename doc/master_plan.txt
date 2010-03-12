@@ -186,3 +186,4 @@ Lightning: the thiefly close-in kiting and indirect skill user
 Earth: ranged damage dealer of little mobility
 Space: a pure tank with decent hitting capabilities
 Time: some type of weird one-on-one mindflayer
+
