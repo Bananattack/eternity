@@ -1,179 +1,62 @@
 [cf] means the thing here is defined further below
 
-Control of the units in the game is achieved by orders, which the
-player spends game-time issuing to them. Units continuously execute
-all accumulated orders by priority (cf), and an issued order changes
-the mass but does not suspend execution, except for an explicit 'wait'
-order (cf). The game can be in two states: decision and execution.
+Control of the units in the game is achieved by orders, which the player spends game-time issuing to them. Units continuously execute all accumulated orders by priority (cf), and an issued order changes the mass but does not suspend execution, except for an explicit 'wait' order (cf). The game can be in two states: decision and execution.
 
 Decision
 --------
-While in decision phase, the game's time flow is paused and the player
-can modify the order queue. When the player is done with modifying the
-order queue he may commit the modifications, which returns the game to
-execution phase. There is no time limit to decision phase.
+While in decision phase, the game's time flow is paused and the player can modify the order queue. When the player is done with modifying the order queue he may commit the modifications, which returns the game to execution phase. There is no time limit to decision phase.
 
-The order queue is a linear list of orders to be issued. Each order
-takes a certain amount of game time to be issued and orders take
-effect only when the entire waiting period is over. Factors affecting
-time requirements include complexity of the order and how many units
-are concurrently issued the same order. There is currently no
-provision for issuing different orders to different units in parallel,
-aside from the effects of a group signal (cf).
+The order queue is a linear list of orders to be issued. Each order takes a certain amount of game time to be issued and orders take effect only when the entire waiting period is over. Factors affecting time requirements include complexity of the order and how many units are concurrently issued the same order. There is currently no provision for issuing different orders to different units in parallel, aside from the effects of a group signal (cf).
 
-There is a special 'order' called 'wait' which takes infinite time to
-issue and has no game-play effect. Its use is to provide a method for
-the player to lapse game time without issuing any substantial orders.
-For convenience, while 'issuing' a 'wait' order (which may be called
-'waiting'), the game automatically accepts any interrupt request (cf).
+There is a special 'order' called 'wait' which takes infinite time to issue and has no game-play effect. Its use is to provide a method for the player to lapse game time without issuing any substantial orders. For convenience, while 'issuing' a 'wait' order (which may be called 'waiting'), the game automatically accepts any interrupt request (cf).
 
 Execution
 ---------
-While in execution phase, the game's time flow runs normally. The
-player has two methods of returning to decision phase.
+While in execution phase, the game's time flow runs normally. The player has two methods of returning to decision phase.
 
-The first is a game state toggle to 'pause after current issue'. When
-an order finishes issuing and the toggle is on, the order takes effect
-and is removed from the queue, then game returns to decision phase.
-The rest of the queue is unaffected. If the toggle is off, the game
-immediately starts issuing the next order in the queue, with its own
-time delay.
+The first is a game state toggle to 'pause after current issue'. When an order finishes issuing and the toggle is on, the order takes effect and is removed from the queue, then game returns to decision phase. The rest of the queue is unaffected. If the toggle is off, the game immediately starts issuing the next order in the queue, with its own time delay.
 
-The second is an instant 'interrupt and cancel order'. This
-immediately puts the game into decision phase, but the order which was
-then currently being issued does not take effect, is pushed back in
-front of the queue and must be reissued from the start, possibly with
-a time discount if it is issued again immediately.
+The second is an instant 'interrupt and cancel order'. This immediately puts the game into decision phase, but the order which was then currently being issued does not take effect, is pushed back in front of the queue and must be reissued from the start, possibly with a time discount if it is issued again immediately.
 
-Interrupts may be initiated by the player at any time, and units in
-the field may according to their orders issue interrupt requests. When
-a request is submitted, the game pauses for a limited amount of time
-and the nature of the request is explained. The player has three
-options: to ignore the request, which does nothing, resumes execution
-phase and is the default once time is up; or choose to 'pause after
-current issue' (if not already active) or 'interrupt and cancel
-order'. There may be a time discount if the player cancels and an
-order is issued to the requesting unit immediately.
+Interrupts may be initiated by the player at any time, and units in the field may according to their orders issue interrupt requests. When a request is submitted, the game pauses for a limited amount of time and the nature of the request is explained. The player has three options: to ignore the request, which does nothing, resumes execution phase and is the default once time is up; or choose to 'pause after current issue' (if not already active) or 'interrupt and cancel order'. There may be a time discount if the player cancels and an order is issued to the requesting unit immediately.
 
 Orders
 ------
-An order is a specific bundle of commands to change an unit's
-instruction list (cf), which includes addition of new instructions
-(cf), modification of current instructions, deletion of instructions
-and rearranging them, including moving between scopes.
+An order is a specific bundle of commands to change an unit's instruction list (cf), which includes addition of new instructions (cf), modification of current instructions, deletion of instructions and rearranging them, including moving between scopes.
 
-The length of time required to issue an order depends on the
-(Kolmogorov) complexity of the changes, plus the length of all
-additions and modifications. There may be credit given for amount of
-information transferred if an order is cancelled and reissued later.
-There is also a base amount of time required to establish
-communication with the unit(s), the more units the longer. This is the
-portion that may be discounted if a unit's interrupt request is
-accepted and an order issued to it immediately.
+The length of time required to issue an order depends on the (Kolmogorov) complexity of the changes, plus the length of all additions and modifications. There may be credit given for amount of information transferred if an order is cancelled and reissued later. There is also a base amount of time required to establish communication with the unit(s), the more units the longer. This is the portion that may be discounted if a unit's interrupt request is accepted and an order issued to it immediately.
 
-While a unit is receiving orders, its efficiency at executing existing
-command logic is greatly reduced (i.e. only the highest priority
-conditions (cf) are active), and its efficiency and speed at executing
-the current action (cf) is reduced as well. This disincentivizes
-players trying to completely reprogram a unit in combat action.
+While a unit is receiving orders, its efficiency at executing existing command logic is greatly reduced (i.e. only the highest priority conditions (cf) are active), and its efficiency and speed at executing the current action (cf) is reduced as well. This disincentivizes players trying to completely reprogram a unit in combat action.
 
 Instructions
 ------------
-Each unit has its own instruction list which is kept separately. The
-instruction list consists of an ordered list of instructions.
-Instructions have a condition part and an action part. The condition
-is a boolean logic statement, and game level of some sort will
-determine just how complicated you can take them to. There will
-probably be a reaction time penalty as well as an execution efficiency
-penalty associated with overly complicated control structures.
+Each unit has its own instruction list which is kept separately. The instruction list consists of an ordered list of instructions. Instructions have a condition part and an action part. The condition is a boolean logic statement, and game level of some sort will determine just how complicated you can take them to. There will probably be a reaction time penalty as well as an execution efficiency penalty associated with overly complicated control structures.
 
-The action part can itself be an instruction list, to allow nesting
-such as 'if (a) then {if (b) then {c}; if (d) then {e} }'. Otherwise,
-the action part consists of a list of actions. An action may be a move
-that actually occurs on the game world, in which case all the
-properties ascribed later on apply; it may also simply update the
-internal variables and data for the unit.
+The action part can itself be an instruction list, to allow nesting such as 'if (a) then {if (b) then {c}; if (d) then {e} }'. Otherwise, the action part consists of a list of actions. An action may be a move that actually occurs on the game world, in which case all the properties ascribed later on apply; it may also simply update the internal variables and data for the unit.
 
-The operation of the unit AI (following the instruction list) is
-simple: unless the unit is currently being issued an order and/or is
-otherwise hampered, the AI functions continuously and in real-time
-finds the action part whose chain of conditions is satisfied, occuring
-highest in the list, executing that list of actions. The lists may
-specify that an action be looped ('if (alive) attack continuously'),
-and specifies the urgency when the list first comes up. This may be
-block level (execute the new list after current list of actions is
-done), action level (jump to new list after current action is done),
-or immediate (interrupt current action and execute new list: 'if
-(someone near death) cure NOW').
+The operation of the unit AI (following the instruction list) is simple: unless the unit is currently being issued an order and/or is otherwise hampered, the AI functions continuously and in real-time finds the action part whose chain of conditions is satisfied, occuring highest in the list, executing that list of actions. The lists may specify that an action be looped ('if (alive) attack continuously'), and specifies the urgency when the list first comes up. This may be block level (execute the new list after current list of actions is done), action level (jump to new list after current action is done), or immediate (interrupt current action and execute new list: 'if (someone near death) cure NOW').
 
-Other associated properties of lists: they may specify that a block is
-to be executed once and then deletes itself; they may specify that a
-condition once satisfied deletes itself (replaced with 'true' or
-'false') - this allows the use of holds as follows. A condition
-'signal X received' is placed over an entire block of instructions and
-if each unit is coordinated to condition on the same signal, lets the
-player synchronize the start of some operation with a broadcast order
-'send signal X'.
+Other associated properties of lists: they may specify that a block is to be executed once and then deletes itself; they may specify that a condition once satisfied deletes itself (replaced with 'true' or 'false') - this allows the use of holds as follows. A condition 'signal X received' is placed over an entire block of instructions and if each unit is coordinated to condition on the same signal, lets the player synchronize the start of some operation with a broadcast order 'send signal X'.
 
 Actions
 -------
-This is the main level that the game operates at. An action is some
-game-physical motion by a unit, whether to move or to use a skill.
-Actions have differing speeds: movement takes pathfinding, with
-terrain affecting movement speed through the grid square/cube and is
-also modified by base movement speed. Skills (attack, spell, what have
-you) have three phases: charge, act, cooldown.
+This is the main level that the game operates at. An action is some game-physical motion by a unit, whether to move or to use a skill. Actions have differing speeds: movement takes pathfinding, with terrain affecting movement speed through the grid square/cube and is also modified by base movement speed. Skills (attack, spell, what have you) have three phases: charge, act, cooldown.
 
-The charge and cooldown are stun-times before and after the skill
-takes effect. The act time may not be instantaneous, as in a multi-hit
-combo, but usually is. Spells that have non-immediate or enduring
-effects either place buffs on units or create virtual units for their
-spells - unless a skill specifies 'duration of holding' as the effect
-duration, the game effect time is divorced from the act time, which
-merely starts the chain of events in motion.
+The charge and cooldown are stun-times before and after the skill takes effect. The act time may not be instantaneous, as in a multi-hit combo, but usually is. Spells that have non-immediate or enduring effects either place buffs on units or create virtual units for their spells - unless a skill specifies 'duration of holding' as the effect duration, the game effect time is divorced from the act time, which merely starts the chain of events in motion.
 
 Elements
 --------
-Skills are divided by a very blurry line separating physical and
-magical skills. All skills, physical and magical, have some sort of
-elemental affinity. Magical skills are split into five schools
-representing their main effects. Physical skills have less universal
-divisions.
+Skills are divided by a very blurry line separating physical and magical skills. All skills, physical and magical, have some sort of elemental affinity. Magical skills are split into five schools representing their main effects. Physical skills have less universal divisions.
 
-The five schools of magic are restorative (curing damage and other
-effects), offensive (pure damage), terrain (effects relating to the
-field, whether modifying or using it), status (ailments, stat
-buff/debuffs), and indirect (catch-all, includes the very weird
-AI-messing effects and other stuff not tied to specific target nor
-field). Magical efficacy is modified up or down depending on the
-caster's alignment with the schools; physical skills may eventually be
-affected as well and the divide vanishes.
+The five schools of magic are restorative (curing damage and other effects), offensive (pure damage), terrain (effects relating to the field, whether modifying or using it), status (ailments, stat buff/debuffs), and indirect (catch-all, includes the very weird AI-messing effects and other stuff not tied to specific target nor field). Magical efficacy is modified up or down depending on the caster's alignment with the schools; physical skills may eventually be affected as well and the divide vanishes.
 
-The six elements are fire opposed to water (cold and ice as well),
-lightning (including the air) opposed to earth (including poison),
-space (physical damage falls here) opposed to time (pure magical and
-mental damage). Where the schools concentrate on the human-desired
-outcomes of an action, the elements govern by what means/source/medium
-it is done. Elemental alignment also modify skill effects, and
-strength/defence may be eliminated if space affinity/resistance
-suffices.
+The six elements are fire opposed to water (cold and ice as well), lightning (including the air) opposed to earth (including poison), space (physical damage falls here) opposed to time (pure magical and mental damage). Where the schools concentrate on the human-desired outcomes of an action, the elements govern by what means/source/medium it is done. Elemental alignment also modify skill effects, and strength/defence may be eliminated if space affinity/resistance suffices.
 
-Affinities are given fixed starting points per character, but can be
-changed slowly through either repeated use, or by training with
-scattered grandmasters of why the hell are you here. This allows the
-player to mold the initial 'classing' of characters into his personal
-liking. Hard caps on how far you can take this is highly discouraged.
-Raising an elemental affinity usually does a slight drop of its
-opposite; the effects on schools should simply be additive serving as
-'levels'.
+Affinities are given fixed starting points per character, but can be changed slowly through either repeated use, or by training with scattered grandmasters of why the hell are you here. This allows the player to mold the initial 'classing' of characters into his personal liking. Hard caps on how far you can take this is highly discouraged. Raising an elemental affinity usually does a slight drop of its opposite; the effects on schools should simply be additive serving as 'levels'.
 
 Characters
 ----------
-This is very underdeveloped at this moment, however there will be 11
-main player characters that stick around for the entire game, one
-aligned with each school, more magically inclined and one with each
-element, physically bent. However, the divide between magic and
-physical should be reduced: no squishy wizards.
+This is very underdeveloped at this moment, however there will be 11 main player characters that stick around for the entire game, one aligned with each school, more magically inclined and one with each element, physically bent. However, the divide between magic and physical should be reduced: no squishy wizards.
 
 Restorative: the standard healer guy
 Offensive: another standard mage-nuker

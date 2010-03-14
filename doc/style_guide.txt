@@ -1,0 +1,20 @@
+General
+-------
+The coding style mostly follows K&R, details given below.
+
+Soft tabs of 4 spaces per level of indentation, no limits on length of lines. In an attempt to reduce the number of lines, skip the newline between a scoping statement and its open-block, "} else if (cond) {" on one line. Block all scoping statments unless really trivial. Blank lines between declarations and code; consider blank lines between segments of code of different purposes. Placing multiple similar and short statements on the same line is allowed but do not abuse readability.
+
+Spaces between binary operators and their arguments except for member access (. -> [] ::), spaces after a comma or semicolon; no spaces for unary operators such as ++, space between scoping operator and its () argument (for, if), no space between function and argument list unless for clarity.
+
+Temporary variables should be scoped where it will be used, usualy in the form [type letter][0-9]*. Current type letters are 'c' for integral temps and 'd' for floating-point ones. Local variables holding non-transitory values and input arguments should be named for their purpose, without appending types to them. Do not declare pointers and their base types on the same line.
+
+CapitalizeAllWords of class and other structure names, lowercase_with_underscores for variable names, underscores optional for unambiguous short cases, camelCase for functions , FULL_UPPERCASE for macros and constants.
+
+Minimize the use of function overloading except for constructor overloading, and stay the fuck away from operator overloading unless there's a strong case for there being one true interpretation of the operator. Avoid macros if possible and try to use inline functions instead. Also avoid the use of templates when possible.
+
+Convoluted assignments and other tricks in scoping statements should be used sparingly, such as to cache an evaluation that is immediately tested. Consider assigning first and then testing on the next line. Use parentheses to disambiguate association between operators if not completely obvious, especially logic and bitwise operators. Try to use (condition != 0) especially in compound statements.
+
+Use const correctness when possible (add const declarations to pointers, references and methods) to state clearly that there are no side effects on input arguments. Practice safe C++; check outputs from malloc, fopen and other things that can fail out from under you. Fine, if malloc fails you can go home anyway. Make functions return OK/fail and cascade from there.
+
+Comments... set up something. Vertically align blocks of comments for similar things.
+
