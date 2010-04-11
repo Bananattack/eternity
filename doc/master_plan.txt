@@ -32,7 +32,7 @@ Instructions
 ------------
 Each unit has its own instruction list which is kept separately. The instruction list consists of an ordered list of instructions. Instructions have a condition part and an action part. The condition is a boolean logic statement, and game level of some sort will determine just how complicated you can take them to. There will probably be a reaction time penalty as well as an execution efficiency penalty associated with overly complicated control structures.
 
-The action part can itself be an instruction list, to allow nesting such as 'if (a) then {if (b) then {c}; if (d) then {e} }'. Otherwise, the action part consists of a list of actions. An action may be a move that actually occurs on the game world, in which case all the properties ascribed later on apply; it may also simply update the internal variables and data for the unit.
+The action part can itself be an instruction list, to allow nesting such as 'if (a) then {if (b) then {c}; if (d) then {e} }'. Otherwise, the action part consists of a list of actions. An action may be a move that actually occurs on the game world, in which case all the properties ascribed later on apply; it may also simply update the internal variables and data for the unit. Nested blocks have two types: an 'AND' and an 'OR'. An 'AND' block will execute all of its subordinate statements in order, while an 'OR' block functions as a mutually exclusive if cascade. The above example is an 'AND' block.
 
 The operation of the unit AI (following the instruction list) is simple: unless the unit is currently being issued an order and/or is otherwise hampered, the AI functions continuously and in real-time finds the action part whose chain of conditions is satisfied, occuring highest in the list, executing that list of actions. The lists may specify that an action be looped ('if (alive) attack continuously'), and specifies the urgency when the list first comes up. This may be block level (execute the new list after current list of actions is done), action level (jump to new list after current action is done), or immediate (interrupt current action and execute new list: 'if (someone near death) cure NOW').
 
@@ -44,15 +44,39 @@ This is the main level that the game operates at. An action is some game-physica
 
 The charge and cooldown are stun-times before and after the skill takes effect. The act time may not be instantaneous, as in a multi-hit combo, but usually is. Spells that have non-immediate or enduring effects either place buffs on units or create virtual units for their spells - unless a skill specifies 'duration of holding' as the effect duration, the game effect time is divorced from the act time, which merely starts the chain of events in motion.
 
+Each action while in the 'act' phase has an internal script and at the appropriate times will invoke 'effects' which are the absolute lowest in the granularity hierarchy, an atomic update to the game state at the mechanics level. Most of the simpler actions will simply have one effect.
+
 Elements
 --------
-Skills are divided by a very blurry line separating physical and magical skills. All skills, physical and magical, have some sort of elemental affinity. Magical skills are split into five schools representing their main effects. Physical skills have less universal divisions.
+Skills are divided by a very blurry line separating physical and magical skills. All skills, physical and magical, have some sort of elemental affinity. Magical skills are split into five schools representing their main effects. Physical skills have less universal divisions, but are still mostly aligned with schools.
 
 The five schools of magic are restorative (curing damage and other effects), offensive (pure damage), terrain (effects relating to the field, whether modifying or using it), status (ailments, stat buff/debuffs), and indirect (catch-all, includes the very weird AI-messing effects and other stuff not tied to specific target nor field). Magical efficacy is modified up or down depending on the caster's alignment with the schools; physical skills may eventually be affected as well and the divide vanishes.
 
-The six elements are fire opposed to water (cold and ice as well), lightning (including the air) opposed to earth (including poison), space (physical damage falls here) opposed to time (pure magical and mental damage). Where the schools concentrate on the human-desired outcomes of an action, the elements govern by what means/source/medium it is done. Elemental alignment also modify skill effects, and strength/defence may be eliminated if space affinity/resistance suffices.
+The six elements are fire opposed to water (cold and ice as well), lightning (including the air) opposed to earth (including poison), space (physical damage falls here) opposed to time (pure magical and mental damage). Where the schools concentrate on the human-desired outcomes of an action, the elements govern through which means/source/medium it is done. Elemental alignment also modify skill effects, and function as attack/defense powers.
 
-Affinities are given fixed starting points per character, but can be changed slowly through either repeated use, or by training with scattered grandmasters of why the hell are you here. This allows the player to mold the initial 'classing' of characters into his personal liking. Hard caps on how far you can take this is highly discouraged. Raising an elemental affinity usually does a slight drop of its opposite; the effects on schools should simply be additive serving as 'levels'.
+Affinities are given fixed starting points per character, but can be changed slowly through either repeated use, or by training with scattered grandmasters of why the hell are you here. This allows the player to mold the initial 'classing' of characters to personal liking. Hard caps on how far you can take this are highly discouraged. Raising an elemental affinity usually incurs a slight drop of its opposite; the effects on schools should simply be additive serving as 'levels'.
+
+Mechanics
+---------
+Innate statistics are as follows: for each element a character has an affinity that governs offensive power of skills, an accuracy and a speed at using aligned skills, and a defensive power against it. For each school, a character has a mastery level that also adjusts power output of skills. Then globally, a character has a stamina maximum (possibly regenerative power), a willpower maximum and an evasion value. Additional statistics regarding AI are not fixed at this moment.
+
+Every effect has a host of attributes to it, including power, delay and accuracy formulas, pierces and damage fraction in each element. Elemental defense is split into two parts: a straight damage reduction and a percentage resist. Defenses are layered in the order encountered towards the target, typically area-buff, personal-buff, armor then innate. Armor is envisioned as a quickly recharging shield that offers only reduction; innate defense should only provide resist, possibly a nominal reduction. Remember that reductions behind resists are magnified and so buffs giving resists are high-level spells.
+
+A piercing effect negates the reductions and resists, usually on a percentage basis, but some powerful attacks can have set reduction pierce numbers. Note that this piercing should not be held to metaphysical consistency and a boss-level '150% reduction pierce', also known as a shield-reverse, should be possible. This allows nasty surprises against those who would permanently maintain shields for everything. The hit formula also uses a pierce against the target's evasion, which counts mostly as a static reduction. A laser attack would probably have a huge static hit penalty (common to most mundane attacks) but also near-full evasion pierce.
+
+Characters have the ability to drop defenses against an incoming attack, for example if it's going to help you. This is probably going to be per-element, and global: if someone drops to take a cure, hit them with the time blast. Elemental shields will need an extra prerogative to be able to let an attack through.
+
+Stamina is this game's incarnation of hit points; except that in the Persona style, 'physical' exertions will cost you stamina. This is marked as 'spent' stamina, as opposed to 'lost' stamina from getting attacked. This distinction matters to restorative spells, where a lower level 'refresh' could only restore spent amounts, and a higher 'restore' is needed to recover actual damage. Willpower is your standard magic points, and WP-directed attacks are going to get common in the late game.
+
+Two universal innate character abilities are to interchange expenditure of these points: a 'blood-magic' type skill to spend hits on a spell and a 'last-chance' skill that keeps you standing at 0 hits, allowing for emergency healing. This functions as a fixed drain on remaining willpower and also a manashield if you still get whacked some more. 0 stamina/0 willpower is obviously a knockout.
+
+Skills
+------
+Tentative skill families and their slightly different effect levels:
+Elemental shield: static point/personal/static area/aura/party, reduction/resist, one-cast/droppable without penalty/rechargeable/held shield/direct manashield/enchantment
+Statistic buff: static point/personal/static area/aura/party, timed/powered/rechargeable timed/rechargeable powered/held spell/powered as held/enchantment
+Restorative: refresh/restore/revive, point/personal/area/epicenter/party, power-based/loss-based/maximum-based, automatic reduction/resist/evasion pierce
+Offensive: point/personal/area/epicenter/party, evasion pierce, reduction/resist pierce, added status effects
 
 Characters
 ----------
