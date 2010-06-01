@@ -1,10 +1,12 @@
 #pragma once
-#include "instruction.h"
+#include "node.h"
+using std::map;
 
 namespace Eternity {
     class Unit {
     private:
-        Instruction instruction_list;
+        Node decision_root;
+        map<Block> instructions;
 /* TODO: add a hashtable or similar for "state variables being listened to by instruction conditions"
  * differentiate between a battlefield state variable and a unit-condition variable (property of a unit/tile satisfying some condition)
  * fix unit properties and put them here */

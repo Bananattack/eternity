@@ -1,5 +1,5 @@
 #include "eternity.h"
-#include "instruction.h"
+#include "node.h"
 
 namespace Eternity {
 }
