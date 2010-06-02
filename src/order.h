@@ -6,6 +6,6 @@
 namespace Eternity {
     class Order {
 /* TODO */
-    }
+    };
 }
 

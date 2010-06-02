@@ -5,6 +5,7 @@
 
 namespace Eternity {
     class Block {
-    }
+/* TODO */
+    };
 }
 

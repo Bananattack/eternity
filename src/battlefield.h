@@ -19,35 +19,37 @@ namespace Eternity {
 
         list<Order> order_queue;
 
-        int next_event_tick;                /* lowest queued event tick number */
         multimap<int,Event> event_queue;    /* (tick,event) multimap queue */
         list<Event> event_continuous;       /* list of all continuous events */
 
 //        multimap<something> callback_map;
 
+        void elapseTick();
         bool issueOrder(Order);
         void handleEvent(Event);
+        bool handleContinuous(Event);
     public:
         Battlefield();
         ~Battlefield();
 
         int elapseGameTime(int);
 
-        bool toggleIssuePause() {
-            return (issue_pause = !issue_pause);
-        }
+        bool toggleIssuePause();
         bool playerInterrupt();
         bool requestInterrupt(const Unit); /* TODO: add reason for interrupt handling */
 
         int insertOrder(const Order);
         bool deleteOrder(int);
 
-        EventRef scheduleEvent(const Event);
+        EventRef scheduleEvent(const Event, int);
         EventRef delayEvent(EventRef, int);
         bool deleteEvent(EventRef);
 
+        ContRef registerContinuous(const Event);
+        bool deleteContinuous(ContRef);
+
         registerCallback(const Unit, int); /* a unit calls this to register a state variable callback listener, TODO: add condition passing convention */
         deregisterCallback(const Unit, int);
-    }
+    };
 }
 

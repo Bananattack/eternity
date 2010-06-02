@@ -26,21 +26,29 @@ An order is a specific bundle of commands to change an unit's instruction list (
 
 The length of time required to issue an order depends on the (Kolmogorov) complexity of the changes, plus the length of all additions and modifications. There may be credit given for amount of information transferred if an order is cancelled and reissued later. There is also a base amount of time required to establish communication with the unit(s), the more units the longer. This is the portion that may be discounted if a unit's interrupt request is accepted and an order issued to it immediately.
 
-While a unit is receiving orders, its efficiency at executing existing command logic is greatly reduced (i.e. only the highest priority conditions (cf) are active), and its efficiency and speed at executing the current action (cf) is reduced as well. This disincentivizes players trying to completely reprogram a unit in combat action.
+While a unit is receiving orders, its efficiency at executing existing command logic is greatly reduced, and its efficiency and speed at executing the current action (cf) is reduced as well. This disincentivizes players trying to completely reprogram a unit in combat action.
 
 Instructions
 ------------
-Each unit has its own instruction list which is kept separately. The instruction list consists of an ordered list of instructions. Instructions have a condition part and an action part. The condition is a boolean logic statement, and game level of some sort will determine just how complicated you can take them to. There will probably be a reaction time penalty as well as an execution efficiency penalty associated with overly complicated control structures.
+Each unit has its own instruction list which is kept separately. The instructions are divided into two parts: a realtime binary decision tree that picks courses of action, and a set of instruction blocks that implement action flows. The decision tree, not necessarily balanced, has internal nodes that consist of a boolean logic statement of the game variables and leaves that have interrupt parameters (cf) which point to an instruction block.
 
-The action part can itself be an instruction list, to allow nesting such as 'if (a) then {if (b) then {c}; if (d) then {e} }'. Otherwise, the action part consists of a list of actions. An action may be a move that actually occurs on the game world, in which case all the properties ascribed later on apply; it may also simply update the internal variables and data for the unit. Nested blocks have two types: an 'AND' and an 'OR'. An 'AND' block will execute all of its subordinate statements in order, while an 'OR' block functions as a mutually exclusive if cascade. The above example is an 'AND' block.
+Instruction blocks may be considered to be the basic statement block of imperative-like programming languages. It consists of a linear sequence of individual statements, which are as follows:
+ACTION - makes the unit actually execute a game action, taking varargs parameters as needed
+SETVAR - sets one of the unit's internal variables
+IFELSE - takes a boolean logic statement, with two blocks GOTOed or SOSUBed per the result
+WHILE  - takes a boolean logic statement, GOSUBing the referenced block as long as it is true
+GOTO   - moves to the head of another block without modifying the return stack
+GOSUB  - moves to the head of another block, pushing the next instruction onto the return stack
 
-The operation of the unit AI (following the instruction list) is simple: unless the unit is currently being issued an order and/or is otherwise hampered, the AI functions continuously and in real-time finds the action part whose chain of conditions is satisfied, occuring highest in the list, executing that list of actions. The lists may specify that an action be looped ('if (alive) attack continuously'), and specifies the urgency when the list first comes up. This may be block level (execute the new list after current list of actions is done), action level (jump to new list after current action is done), or immediate (interrupt current action and execute new list: 'if (someone near death) cure NOW').
+As implied, a GOSUB statement acts like a normal function call, and will continue the next instruction of the parent after the subroutine exits; a GOTO acts like a normal jump, on exit it continues the next instruction of the grandparent (if any).
 
-Other associated properties of lists: they may specify that a block is to be executed once and then deletes itself; they may specify that a condition once satisfied deletes itself (replaced with 'true' or 'false') - this allows the use of holds as follows. A condition 'signal X received' is placed over an entire block of instructions and if each unit is coordinated to condition on the same signal, lets the player synchronize the start of some operation with a broadcast order 'send signal X'.
+On activating a leaf, there is a waiting time parameter which specifies the maximum time allowed for the current course of action (if any) to complete; if this time runs out execution is forcibly halted and moved to the new course, with all attendant side effects. The unit has access to a special internal variable with the current value of this interrupt clock. With most actions having variable time-to-cast, the incidence of forcible interrupts should be mostly avoidable.
+
+The functioning of this tree is as follows: continuously the current decision is made, which selects one of the leaves to be executed. The first time a leaf is selected, it computes its wait time and starts counting down. When the current course finishes or the clock zeros, whichever comes first, the block specified by the leaf is moved to, with an empty return stack. If the current course finishes without a new leaf being selected, and the current leaf does not specify execute-once per activation, it is simply executed again; if it does then the unit idles. To specify execute-once then fall-through, use a flag tested on an internal node.
 
 Actions
 -------
-This is the main level that the game operates at. An action is some game-physical motion by a unit, whether to move or to use a skill. Actions have differing speeds: movement takes pathfinding, with terrain affecting movement speed through the grid square/cube and is also modified by base movement speed. Skills (attack, spell, what have you) have three phases: charge, act, cooldown.
+This is the main level that the game operates at. An action is some game-physical motion by a unit, whether to move or to use a skill. Actions have differing speeds: movement takes pathfinding, with terrain affecting movement speed through the grid hex and is also modified by base movement speed. Skills (attack, spell, what have you) have three phases: charge, act, cooldown.
 
 The charge and cooldown are stun-times before and after the skill takes effect. The act time may not be instantaneous, as in a multi-hit combo, but usually is. Spells that have non-immediate or enduring effects either place buffs on units or create virtual units for their spells - unless a skill specifies 'duration of holding' as the effect duration, the game effect time is divorced from the act time, which merely starts the chain of events in motion.
 
@@ -48,11 +56,11 @@ Each action while in the 'act' phase has an internal script and at the appropria
 
 Elements
 --------
-Skills are divided by a very blurry line separating physical and magical skills. All skills, physical and magical, have some sort of elemental affinity. Magical skills are split into five schools representing their main effects. Physical skills have less universal divisions, but are still mostly aligned with schools.
+Skills are to be unified, without division into physical and magical skills, all having some sort of elemental affinity, and are aligned along three axes of schools representing its method of invoking an effect upon the game world.
 
-The five schools of magic are restorative (curing damage and other effects), offensive (pure damage), terrain (effects relating to the field, whether modifying or using it), status (ailments, stat buff/debuffs), and indirect (catch-all, includes the very weird AI-messing effects and other stuff not tied to specific target nor field). Magical efficacy is modified up or down depending on the caster's alignment with the schools; physical skills may eventually be affected as well and the divide vanishes.
+The three axes are conjuring (creation of objects) opposed to mutation (changing existing objects), kinesis (moving objects around, ranged attacks) opposed to enchantment (binding objects together, melee attacks), and entropein (creating damage/effects) opposed to transference ((re)moving damage/effects). For example a stereotypical fire bolt would be conjuring (summons up a ball of fire) - kinesis (throws it at target) - entropein (aims to cause damage). Skill efficacy is tied to the caster's mastery of the different schools used in the casting.
 
-The six elements are fire opposed to water (cold and ice as well), lightning (including the air) opposed to earth (including poison), space (physical damage falls here) opposed to time (pure magical and mental damage). Where the schools concentrate on the human-desired outcomes of an action, the elements govern through which means/source/medium it is done. Elemental alignment also modify skill effects, and function as attack/defense powers.
+The six elements are fire opposed to water (cold and ice as well), air (including lightning) opposed to earth (including poison), and space (standard 'physical' damage falls here) opposed to time (pure magical and mental damage). Where the schools concentrate on the human-desired outcomes of an action, the elements govern through which means/source/medium it is done, and function as defense powers.
 
 Affinities are given fixed starting points per character, but can be changed slowly through either repeated use, or by training with scattered grandmasters of why the hell are you here. This allows the player to mold the initial 'classing' of characters to personal liking. Hard caps on how far you can take this are highly discouraged. Raising an elemental affinity usually incurs a slight drop of its opposite; the effects on schools should simply be additive serving as 'levels'.
 
@@ -80,17 +88,5 @@ Offensive: point/personal/area/epicenter/party, evasion pierce, reduction/resist
 
 Characters
 ----------
-This is very underdeveloped at this moment, however there will be 11 main player characters that stick around for the entire game, one aligned with each school, more magically inclined and one with each element, physically bent. However, the divide between magic and physical should be reduced: no squishy wizards.
-
-Restorative: the standard healer guy
-Offensive: another standard mage-nuker
-Terrain: geomancer type, support mage
-Status: could be the bard archetype, supporter
-Indirect: think mysterious mage of very weird area spells
-Fire: beserk very-little-armor front-liner
-Water: the ranged trappist and infiltrating type stuff
-Lightning: the thiefly close-in kiting and indirect skill user
-Earth: ranged damage dealer of little mobility
-Space: a pure tank with decent hitting capabilities
-Time: some type of weird one-on-one mindflayer
+This is very underdeveloped at this moment, however there will be 6 main player characters that stick around for the entire game, one aligned with each school.
 
