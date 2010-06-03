@@ -5,5 +5,9 @@
 #include "unit.h"
 
 namespace Eternity {
+/* Node class methods */
+    Node::bool isLeaf() const {
+        return leaf;
+    }
 }
 

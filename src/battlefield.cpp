@@ -27,6 +27,9 @@ namespace Eternity {
 
     bool Battlefield::issueOrder(Order order) {
 /* TODO */
+        if (issue_pause) {
+            paused = true;
+        }
     }
 
     void Battlefield::handleEvent(Event event) {
@@ -47,12 +50,12 @@ namespace Eternity {
         return (issue_pause = !issue_pause);
     }
 
-    EventRef Battlefield::scheduleEvent(const Event event, int delay) {
-        return EventRef(event_queue.insert(event_queue.begin(), pair<int,Event>(game_tick + delay, event)));
+    EventRef Battlefield::scheduleEvent(const Event& event, int delay) {
+        return EventRef(event_queue.insert(event_queue.begin(), pair<int,Event&>(game_tick + delay, event)));
     }
 
     EventRef Battlefield::delayEvent(EventRef ref, int delay) {
-        EventRef ret = EventRef(event_queue.insert(ref.reference, pair<int,Event>(ref.getTick() + delay, ref.getEvent())));
+        EventRef ret = EventRef(event_queue.insert(ref.getIterator(), pair<int,Event&>(ref.getTick() + delay, ref.getEvent())));
         event_queue.erase(ref.reference);
         return ret;
     }
@@ -62,13 +65,65 @@ namespace Eternity {
         return true;
     }
 
-    ContRef Battlefield::registerContinuous(const Event event) {
+    ContRef Battlefield::registerContinuous(const Event& event) {
         return ContRef(event_continuous.push_back(event));
     }
 
     bool Battlefield::deleteContinuous(ContRef ref) {
-        event_continuous.erase(ref.reference);
+        event_continuous.erase(ref.getIterator());
         return true;
+    }
+
+    void Battlefield::registerUnit(const Unit& unit, String name) {
+        unit_list.insert(pair<String,Unit&>(name, unit));
+    }
+
+    bool Battlefield::renameUnit(String old_name, String new_name) {
+        map<String,Unit&>::iterator ref;
+        if ((ref = unit_list.find(old_name)) == unit_list.end()) {
+            return false;
+        }
+        rename**;
+        return true;
+    }
+
+    bool Battlefield::deleteUnit(String name) {
+        map<String,Unit*>::iterator ref;
+        if ((ref = unit_list.find(name)) == unit_list.end()) {
+            return false;
+        }
+        unit_list.erase(ref);
+        return true;
+    }
+
+/* EventRef class methods */
+    EventRef::EventRef(multimap<int,Event&>::iterator input) {
+        reference = input;
+    }
+
+    EventRef::int getTick() const {
+        return reference->first;
+    }
+
+    EventRef::Event& getEvent() const {
+        return reference->second;
+    }
+
+    EventRef::multimap<int,Event&>::iterator getIterator() const {
+        return reference;
+    }
+
+/* ContRef class methods */
+    ContRef::ContRef(list<Event&>::iterator input) {
+        reference = input;
+    }
+
+    ContRef::Event& getEvent() const {
+        return *reference;
+    }
+
+    ContRef::list<Event&>::iterator getIterator() const {
+        return reference;
     }
 }
 

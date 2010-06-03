@@ -3,10 +3,5 @@
 
 #pragma once
 #include "battlefield.h"
-#include "eternity.h"
-#include "event.h"
-#include "condition.h"
-#include "node.h"
-#include "block.h"
-#include "order.h"
 #include "unit.h"
+#include "order.h"
