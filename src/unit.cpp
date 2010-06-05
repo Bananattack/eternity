@@ -5,9 +5,27 @@
 #include "unit.h"
 
 namespace Eternity {
-/* Node class methods */
-    Node::bool isLeaf() const {
-        return leaf;
+/* Unit class methods */
+    int Unit::getID() const {
+        return unit_id;
+    }
+
+    string Unit::getName() const {
+        return name;
+    }
+
+    Location Unit::getPosition() const {
+        return position;
+    }
+
+    bool Unit::setID(int new_id) {
+        unit_id = new_id;
+        return true;
+    }
+
+    bool Unit::setName(string new_name) {
+        name = new_name;
+        return true;
     }
 }
 
