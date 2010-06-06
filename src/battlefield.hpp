@@ -2,6 +2,9 @@
  * See /doc/license.txt for details on how this source can be licensed for use. */
 
 #pragma once
+#ifndef BATTLEFIELD_H
+#define BATTLEFIELD_H
+
 #include "order.h"
 #include "unit.h"
 using std::string;
@@ -10,12 +13,20 @@ using std::map;
 using std::multimap;
 
 namespace Eternity {
+    class Battlefield;
+    class Location;
+    class Event;
+    class Continuous;
+    class Effect;
+    class EventRef;
+    class ContRef;
+
 /* the base class for the entire battlefield */
     class Battlefield {
     private:
-        bool paused;        /* whether game is in decision phase */
-        bool issue_pause;   /* will the game pause after current issue */
-        int game_tick;      /* game tick currently calculated */
+        bool paused;                        /* whether game is in decision phase */
+        bool issue_pause;                   /* will the game pause after current issue */
+        int game_tick;                      /* game tick currently calculated */
 
         list<Order*> order_queue;           /* list of all orders pending */
         multimap<int,Event*> event_queue;   /* (tick,event) multimap queue */
@@ -35,24 +46,24 @@ namespace Eternity {
         int elapseGameTime(int);
 
         bool toggleIssuePause();
-        bool playerInterrupt();
-        bool requestInterrupt(const Unit&, string);
+        bool playerInterrupt();                         /* player interrupts execution handler */
+        bool requestInterrupt(const Unit&, string);     /* unit interrupt request handler */
 
         int insertOrder(const Order*);
         bool deleteOrder(int);
 
-        EventRef scheduleEvent(const Event*, int);
-        EventRef delayEvent(EventRef, int);
-        bool deleteEvent(EventRef);
+        EventRef scheduleEvent(const Event*, int);      /* schedule an Event specified ticks later */
+        EventRef delayEvent(EventRef, int);             /* delay an already scheduled Event */
+        bool deleteEvent(EventRef);                     /* delete an already scheduled Event */
 
-        ContRef registerContinuous(const Continuous*);
-        bool deleteContinuous(ContRef);
+        ContRef registerContinuous(const Continuous*);  /* register a Continuous event */
+        bool deleteContinuous(ContRef);                 /* de-register a Continuous event */
 
-        void registerUnit(const Unit*);
-        bool renameUnit(int, string);
-        bool deleteUnit(int);
-        Unit* getUnit(int);
-        map<int,Unit*>::iterator getUnitList();
+        void registerUnit(const Unit*);                 /* register a Unit onto the map */
+        bool renameUnit(int, string);                   /* wrapper for renaming a specific Unit */
+        bool deleteUnit(int);                           /* de-register a Unit off the map */
+        Unit* getUnit(int);                             /* retrieve a Unit by unit_ID */
+        map<int,Unit*>::iterator getUnitList();         /* retrieve the full list of map Units */
         /**/ getDirtyUnits();
     };
 
@@ -94,7 +105,7 @@ namespace Eternity {
     };
 
 /* a continuous game-play event */
-    class Continuous:Event {
+    class Continuous:public Event {
         Condition ending;
     public:
         bool occur();
@@ -131,4 +142,6 @@ namespace Eternity {
         list<Continuous*>::iterator getIterator() const;
     };
 }
+
+#endif /*BATTLEFIELD_H*/
 

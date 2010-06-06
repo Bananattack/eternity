@@ -18,6 +18,10 @@ namespace Eternity {
         return position;
     }
 
+    bool Unit::getDirty() const {
+        return dirty;
+    }
+
     bool Unit::setID(int new_id) {
         unit_id = new_id;
         return true;
