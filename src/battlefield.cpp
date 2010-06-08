@@ -7,9 +7,9 @@
 namespace Eternity {
 /* Battlefield class methods */
     void Battlefield::elapseTick() {
-        multimap<int,Event*>::iterator qevent_max, qevent_cur;
-        list<Continuous*>::iterator cevent_max, cevent_cur;
-        map<int,Unit*>::iterator ulist_max, ulist_cur;
+        multimap<int,Event*>::iterator qevent_cur, qevent_max;
+        list<Continuous*>::iterator cevent_cur, cevent_max;
+        map<int,Unit*>::const_iterator ulist_max, ulist_cur;
         ulist_max = unit_list.end();
         /* cache all unit/effect statuses */
         ulist_cur = unit_list.begin();
@@ -125,7 +125,7 @@ namespace Eternity {
         return true;
     }
 
-    Unit* Battlefield::getUnit(int unit_id) {
+    Unit* Battlefield::getUnit(int unit_id) const {
         map<int,Unit*>::iterator ref;
         if ((ref = unit_list.find(unit_id)) == unit_list.end()) {
             return NULL;
@@ -133,8 +133,12 @@ namespace Eternity {
         return ref->second;
     }
 
-    map<String,Unit*>::iterator Battlefield::getUnitList() {
-        return unit_list.begin();
+    const map<int,Unit*>* Battlefield::getUnitList() const {
+        return &unit_list;
+    }
+
+    const set<int>* Battlefield::getDirtyUnitList() const {
+        return &dunit_list;
     }
 
 /* Location class methods */

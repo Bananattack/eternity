@@ -5,6 +5,7 @@
 #ifndef BATTLEFIELD_H
 #define BATTLEFIELD_H
 
+#include "battlefield.h"
 #include "order.h"
 #include "unit.h"
 using std::string;
@@ -13,16 +14,27 @@ using std::map;
 using std::multimap;
 
 namespace Eternity {
-    class Battlefield;
-    class Location;
-    class Event;
-    class Continuous;
-    class Effect;
-    class EventRef;
-    class ContRef;
+/* the exposed interface for the battlefield class */
+    class Battlefield_Interface {
+    public:
+        virtual int elapseGameTime(int) = 0;
+
+        virtual bool toggleIssuePause() = 0;
+        virtual bool playerInterrupt() = 0;                         /* player interrupts execution handler */
+        virtual bool requestInterrupt(const Unit*, string) = 0;     /* unit interrupt request handler */
+
+        virtual int insertOrder(const Order*) = 0;
+        virtual bool deleteOrder(int) = 0;
+
+        virtual bool registerUnit(const Unit*) = 0;                 /* register a Unit onto the map */
+        virtual bool renameUnit(int, string) = 0;                   /* wrapper for renaming a specific Unit */
+        virtual bool deleteUnit(int) = 0;                           /* de-register a Unit off the map */
+
+        virtual Unit* getUnit(int) const = 0;                       /* retrieve a Unit by unit_ID */
+    }
 
 /* the base class for the entire battlefield */
-    class Battlefield {
+    class Battlefield:public Battlefield_Interface {
     private:
         bool paused;                        /* whether game is in decision phase */
         bool issue_pause;                   /* will the game pause after current issue */
@@ -32,6 +44,8 @@ namespace Eternity {
         multimap<int,Event*> event_queue;   /* (tick,event) multimap queue */
         list<Continuous*> event_continuous; /* list of all continuous events */
         map<int,Unit*> unit_list;           /* (ID,unit) list of all units on map */
+        map<int,bool*> dunit_temp;          /* (ID,isDirty) list of all units dirtied this tick */
+        set<int> dunit_list;                /* ID list of all units dirtied this tick */
 
         void elapseTick();
         bool cacheStatus();
@@ -46,8 +60,8 @@ namespace Eternity {
         int elapseGameTime(int);
 
         bool toggleIssuePause();
-        bool playerInterrupt();                         /* player interrupts execution handler */
-        bool requestInterrupt(const Unit&, string);     /* unit interrupt request handler */
+        bool playerInterrupt();
+        bool requestInterrupt(const Unit*, string);
 
         int insertOrder(const Order*);
         bool deleteOrder(int);
@@ -59,12 +73,13 @@ namespace Eternity {
         ContRef registerContinuous(const Continuous*);  /* register a Continuous event */
         bool deleteContinuous(ContRef);                 /* de-register a Continuous event */
 
-        void registerUnit(const Unit*);                 /* register a Unit onto the map */
-        bool renameUnit(int, string);                   /* wrapper for renaming a specific Unit */
-        bool deleteUnit(int);                           /* de-register a Unit off the map */
-        Unit* getUnit(int);                             /* retrieve a Unit by unit_ID */
-        map<int,Unit*>::iterator getUnitList();         /* retrieve the full list of map Units */
-        /**/ getDirtyUnits();
+        bool registerUnit(const Unit*);
+        bool renameUnit(int, string);
+        bool deleteUnit(int);
+
+        Unit* getUnit(int) const;
+        const map<int,Unit*>* getUnitList() const;      /* retrieve the full list of map Units */
+        const set<int>* getDirtyUnitsStart() const;     /* retrieve the ID list of Units dirtied this tick */
     };
 
 /* a unit map location wrapper */
@@ -95,21 +110,22 @@ namespace Eternity {
 
 /* a game-play event */
     class Event {
-    private:
+    protected:
         Unit invoker;
         map<Filter,list<Effect>> effect_list;
     public:
         virtual bool occur();
-        virtual bool isContinuous();
+        virtual bool isContinuous() const;
 /* TODO */
     };
 
 /* a continuous game-play event */
     class Continuous:public Event {
+    private:
         Condition ending;
     public:
         bool occur();
-        bool isContinuous();
+        bool isContinuous() const;
     };
 
 /* a game-play effect */
