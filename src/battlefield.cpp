@@ -10,10 +10,9 @@ namespace Eternity {
         multimap<int,Event*>::iterator qevent_cur, qevent_max;
         list<Continuous*>::iterator cevent_cur, cevent_max;
         map<int,Unit*>::const_iterator ulist_max, ulist_cur;
-        ulist_max = unit_list.end();
         /* cache all unit/effect statuses */
-        ulist_cur = unit_list.begin();
-        while (ulist_cur++ != ulist_max) {
+        ulist_max = unit_list.end();
+        for (unit_cur = unit_list.begin(); ulist_cur != ulist_max; ulist_cur++) {
             ulist_cur->cacheStatus();
         }
         cacheStatus();
@@ -24,32 +23,27 @@ namespace Eternity {
             event_queue.erase(qevent_cur);
         }
         /* handle continuous events */
-        cevent_max = event_continuous.end();
-        cevent_cur = event_continuous.begin();
-        do {
+        for (cevent_cur = event_continuous.begin(), cevent_max = event_continuous.end(); cevent_cur != cevent_max; cevent_cur++) {
             if (handleContinuous(cevent_cur->second)) {
                 event_continuous.erase(cevent_cur);
             }
-        } while (cevent_cur++ != cevent_max);
+        }
         /* apply changes to all unit/effect statuses */
-        ulist_cur = unit_list.begin();
-        while (ulist_cur++ != ulist_max) {
+        for (unit_cur = unit_list.begin(); ulist_cur != ulist_max; ulist_cur++) {
             ulist_cur->applyStatus();
         }
         applyStatus();
         /* cache all unit internal states */
-        ulist_cur = unit_list.begin();
-        while (ulist_cur++ != ulist_max) {
+        for (unit_cur = unit_list.begin(); ulist_cur != ulist_max; ulist_cur++) {
             ulist_cur->cacheState();
         }
+/*TODO: issue order if any */
         /* cycle through all units and have them act */
-        ulist_cur = unit_list.begin();
-        while (ulist_cur++ != ulist_max) {
+        for (unit_cur = unit_list.begin(); ulist_cur != ulist_max; ulist_cur++) {
             ulist_cur->elapseCallback() /*API may change*/
         }
         /* apply changes to all unit internal states */
-        ulist_cur = unit_list.begin();
-        while (ulist_cur++ != ulist_max) {
+        for (unit_cur = unit_list.begin(); ulist_cur != ulist_max; ulist_cur++) {
             ulist_cur->applyState();
         }
     }

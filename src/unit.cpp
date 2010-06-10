@@ -115,6 +115,7 @@ namespace Eternity {
     }
 
     bool Node_Filter::evaluate(Unit& caller, Node* passing_filter, const map<int,Unit*>* punit_set, const set<int>* pdunit_set) {
+        int t_id;
         set<int> tunit_set;
         map<int,Unit*>::iterator unit_cur, unit_max;
         map<int,Unit*>::const_iterator punit_cur, punit_max;
@@ -140,25 +141,67 @@ namespace Eternity {
             }
             /* a unit past this filter is dirty if it (was in, now out), or vv, or if it was marked as dirty and (was in, now in)
              * (in tunit_set <==> now in), (in dunit_set <==> was in), (in pdunit_set <==> was dirty) */
+            dunit_cur = dunit_set.begin(); dunit_max = dunit_set.end();
+            punit_cur = pdunit_set->begin(); punit_max = pdunit_set->end();
             for (tunit_cur = tunit_set.begin(), tunit_max = tunit_set.end(); tunit_cur != tunit_max; tunit_cur++) {
-                if (/*tunit_cur in dunit_set*/) {
-                    if (/*tunit_cur not in pdunit_set*/) {
-                        /*remove from dunit_set*/
+                tid = *tunit_cur;
+                if (dunit_cur != dunit_max) {
+                   while ((*dunit_cur < tid) && (++dunit_cur != dunit_max));
+                    if ((dunit_cur != dunit_max) && (*dunit_cur == tid)) {
+                        /* tunit_cur in dunit_set */
+                        if (punit_cur != punit_max) {
+                            while ((*punit_cur < tid) && (++punit_cur != punit_max));
+                            if ((punit_cur == punit_max) || *punit_cur > tid) {
+                                /* tunit_cur not in pdunit_set: remove from dunit_set */
+                                dunit_cur = dunit_set.erase(dunit_cur);
+                                /*XXX need to include?*/ dunit_end = dunit_set.end();
+                            }
+                        } else {
+                            /* pdunit_set iterated through, equal to above block */
+                            dunit_cur = dunit_set.erase(dunit_cur);
+                            /*XXX need to include?*/ dunit_end = dunit_set.end();
+                        }
+                    } else {
+                        /* tunit_cur not in dunit_set: add to dunit_set */
+                        dunit_cur = dunit_set.insert(--dunit_cur, tid);
+                        /*XXX need to include?*/ dunit_max = dunit_set.end();
                     }
                 } else {
-                    /*insert into dunit_set*/
+                    /* dunit_set iterated through, equal to above block */
+                    dunit_cur = dunit_set.insert(--dunit_cur, tid);
+                    /*XXX need to include?*/ dunit_max = dunit_set.end();
                 }
             }
         } else {
             /* cache valid, re-check all units marked dirty
              * a unit past this filter is dirty if it was marked dirty, and !(was out, now out) */
+            unit_cur = unit_set.begin(); unit_max = unit_set.end();
             for (punit_cur = pdunit_set->begin(), punit_max = pdunit_set->end(); punit_cur != punit_end; punit_cur++) {
+                tid = *punit_cur;
                 if (test->evaluate(punit_cur->second)) {
-                    /*(if !in unit_set) add into unit_set*/
-                    /*add into dunit_set*/
-                } else if (/*punit_cur in unit_set*/) {
-                    /*remove from unit_set*/
-                    /*add into dunit_set*/
+                    if (unit_cur != unit_max) {
+                        while ((*unit_cur < tid) && (++unit_cur != unit_max));
+                        if ((unit_cur == unit_max) || (*unit_cur > tid)) {
+                            /* punit_cur not in unit_set: add to unit_set */
+                            unit_cur = unit_set.insert(--unit_cur, punit_set->find(tid));
+                            /*XXX need to include?*/ unit_max = unit_set.end();
+                        }
+                    } else {
+                        /* unit_set iterated through, equal to above block */
+                        unit_cur = unit_set.insert(unit_cur, punit_set->find(tid));
+                        /*XXX need to include?*/ unit_max = unit_set.end();
+                    }
+                    dunit_cur = dunit_set.insert(dunit_cur, tid);
+                } else {
+                    if (unit_cur != unit_max) {
+                        while ((*unit_cur < tid) && (++unit_cur != unit_max));
+                        if ((unit_cur != unit_max) && (*unit_cur == tid)) {
+                            /* punit_cur in unit_set: remove from unit_set and add to dunit_set */
+                            unit_cur = unit_set.erase(unit_cur);
+                            /*XXX need to include?*/ unit_max = unit_set.end();
+                            dunit_cur = dunit_set.insert(dunit_cur, tid);
+                        }
+                    }
                 }
             }
         }
