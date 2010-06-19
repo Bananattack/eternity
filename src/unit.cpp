@@ -117,9 +117,9 @@ namespace Eternity {
     bool Node_Filter::evaluate(Unit& caller, Node* passing_filter, const map<int,Unit*>* punit_set, const set<int>* pdunit_set) {
         int t_id;
         set<int> tunit_set;
-        map<int,Unit*>::iterator unit_cur, unit_max;
+        map<int,Unit*>::iterator unit_cur, unit_tmp, unit_max;
         map<int,Unit*>::const_iterator punit_cur, punit_max;
-        set<int>::iterator dunit_cur, dunit_max, tunit_cur, tunit_max;
+        set<int>::iterator dunit_cur, dunit_tmp, dunit_max, tunit_cur, tunit_max;
         dunit_set.clear();
         dunit_cur = dunit_set.begin();
         if (test->checkDirty() || (passing_filter != last_filter) || modified) {
@@ -133,7 +133,7 @@ namespace Eternity {
             unit_set.clear();
             /* evaluate every unit in unit_set_p for inclusion into unit_set and tunit_set */
             dunit_cur = tunit_set.begin()
-            for (punit_cur = punit_set->begin(), punit_max = punit_set->end(); punit_cur != punit_end; punit_cur++) {
+            for (punit_cur = punit_set->begin(), punit_max = punit_set->end(); punit_cur != punit_max; punit_cur++) {
                 if (test->evaluate(punit_cur->second)) {
                     unit_cur = unit_set.insert(unit_cur, *punit_cur);
                     dunit_cur = tunit_set.insert(dunit_cur, punit_cur->first);
@@ -146,50 +146,50 @@ namespace Eternity {
             for (tunit_cur = tunit_set.begin(), tunit_max = tunit_set.end(); tunit_cur != tunit_max; tunit_cur++) {
                 tid = *tunit_cur;
                 if (dunit_cur != dunit_max) {
-                   while ((*dunit_cur < tid) && (++dunit_cur != dunit_max));
+                    while ((*dunit_cur < tid) && (++dunit_cur != dunit_max));
                     if ((dunit_cur != dunit_max) && (*dunit_cur == tid)) {
                         /* tunit_cur in dunit_set */
                         if (punit_cur != punit_max) {
                             while ((*punit_cur < tid) && (++punit_cur != punit_max));
                             if ((punit_cur == punit_max) || *punit_cur > tid) {
                                 /* tunit_cur not in pdunit_set: remove from dunit_set */
-                                dunit_cur = dunit_set.erase(dunit_cur);
-                                /*XXX need to include?*/ dunit_end = dunit_set.end();
+                                dunit_tmp = dunit_cur;
+                                dunit_cur++;
+                                dunit_set.erase(dunit_tmp);
                             }
                         } else {
                             /* pdunit_set iterated through, equal to above block */
-                            dunit_cur = dunit_set.erase(dunit_cur);
-                            /*XXX need to include?*/ dunit_end = dunit_set.end();
+                            dunit_tmp = dunit_cur;
+                            dunit_cur++;
+                            dunit_set.erase(dunit_tmp);
                         }
                     } else {
                         /* tunit_cur not in dunit_set: add to dunit_set */
-                        dunit_cur = dunit_set.insert(--dunit_cur, tid);
-                        /*XXX need to include?*/ dunit_max = dunit_set.end();
+                        dunit_tmp = dunit_cur;
+                        dunit_set.insert(--dunit_tmp, tid);
                     }
                 } else {
                     /* dunit_set iterated through, equal to above block */
-                    dunit_cur = dunit_set.insert(--dunit_cur, tid);
-                    /*XXX need to include?*/ dunit_max = dunit_set.end();
+                    dunit_tmp = dunit_cur;
+                    dunit_set.insert(--dunit_tmp, tid);
                 }
             }
         } else {
             /* cache valid, re-check all units marked dirty
              * a unit past this filter is dirty if it was marked dirty, and !(was out, now out) */
             unit_cur = unit_set.begin(); unit_max = unit_set.end();
-            for (punit_cur = pdunit_set->begin(), punit_max = pdunit_set->end(); punit_cur != punit_end; punit_cur++) {
+            for (punit_cur = pdunit_set->begin(), punit_max = pdunit_set->end(); punit_cur != punit_max; punit_cur++) {
                 tid = *punit_cur;
                 if (test->evaluate(punit_cur->second)) {
                     if (unit_cur != unit_max) {
                         while ((*unit_cur < tid) && (++unit_cur != unit_max));
                         if ((unit_cur == unit_max) || (*unit_cur > tid)) {
-                            /* punit_cur not in unit_set: add to unit_set */
+                            /* punit_cur not in unit_set: add to unit_set - assumed rare event */
                             unit_cur = unit_set.insert(--unit_cur, punit_set->find(tid));
-                            /*XXX need to include?*/ unit_max = unit_set.end();
                         }
                     } else {
                         /* unit_set iterated through, equal to above block */
-                        unit_cur = unit_set.insert(unit_cur, punit_set->find(tid));
-                        /*XXX need to include?*/ unit_max = unit_set.end();
+                        unit_cur = unit_set.insert(--unit_cur, punit_set->find(tid));
                     }
                     dunit_cur = dunit_set.insert(dunit_cur, tid);
                 } else {
@@ -197,8 +197,9 @@ namespace Eternity {
                         while ((*unit_cur < tid) && (++unit_cur != unit_max));
                         if ((unit_cur != unit_max) && (*unit_cur == tid)) {
                             /* punit_cur in unit_set: remove from unit_set and add to dunit_set */
-                            unit_cur = unit_set.erase(unit_cur);
-                            /*XXX need to include?*/ unit_max = unit_set.end();
+                            unit_tmp = unit_cur;
+                            unit_cur++;
+                            unit_set.erase(unit_tmp);
                             dunit_cur = dunit_set.insert(dunit_cur, tid);
                         }
                     }
@@ -206,9 +207,9 @@ namespace Eternity {
             }
         }
         if (satisfied = !unit_set.empty()) {
-            return t_branch->evaluate(caller, this, unit_set.begin(), dunit_set.begin());
+            return t_branch->evaluate(caller, this, &unit_set, &dunit_set);
         } else {
-            return f_branch->evaluate(caller, NULL, caller.getUnitListBegin(), caller.getDirtyUnitListBegin());
+            return f_branch->evaluate(caller, NULL, caller.getUnitList(), caller.getDirtyUnitList());
         }
     }
 

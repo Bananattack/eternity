@@ -6,7 +6,7 @@ Decision
 --------
 While in decision phase, the game's time flow is paused and the player can modify the order queue. When the player is done with modifying the order queue he may commit the modifications, which returns the game to execution phase. There is no time limit to decision phase.
 
-The order queue is a linear list of orders to be issued. Each order takes a certain amount of game time to be issued and orders take effect only when the entire waiting period is over. Factors affecting time requirements include complexity of the order and how many units are concurrently issued the same order. There is currently no provision for issuing different orders to different units in parallel, aside from the effects of a group signal (cf).
+The order queue is a linear list of orders to be issued. Each order takes a certain amount of game time to be issued and orders take effect only when the entire waiting period is over. Factors affecting time requirements include complexity of the order and how many units are concurrently issued the same order. There is currently no provision for issuing different orders to different units in parallel, which may be accomplished from the effects of a group signal (cf).
 
 There is a special 'order' called 'wait' which takes infinite time to issue and has no game-play effect. Its use is to provide a method for the player to lapse game time without issuing any substantial orders. For convenience, while 'issuing' a 'wait' order (which may be called 'waiting'), the game automatically accepts any interrupt request (cf).
 
@@ -32,6 +32,10 @@ Instructions
 ------------
 Each unit has its own instruction list which is kept separately. The instructions are divided into two parts: a realtime binary decision tree that picks courses of action, and a set of instruction blocks that implement action flows. The decision tree, not necessarily balanced, has internal nodes that consist of a boolean logic statement of the game variables and leaves that have interrupt parameters (cf) which point to an instruction block.
 
+The internal nodes have two types: a standard boolean logic statement, which is either true or false, or a filtering node. Filtering nodes use a temporary local variable that stores a list of units, initialized to everyone. The logic statement in a filtering node takes as argument a unit, and returns true (filter it through) or false (remove it from the list). When executing a filtering node, the statement filters all the units currently in the list and the entire node returns true if the list is nonempty. If the list is empty, the list is re-initialized to everyone (in case another filtering node comes later) and the node returns false.
+
+Terminal nodes also have two types: a standard one, which simply point to an instruction block with an interrupt timer block (cf), and a sorting one. Sorting nodes receive the fully filtered list of passed units, and additionally have a logic statement that takes two units as arguments, returning true if the first is greater than or equal to the second, in a (assumed, player self-enforced) weak ordering. (One of) the greatest units (in that order) will be named in a special local variable for 'action target' before the instruction block is executed. This allows for apparently trivial statements like 'attack enemy with lowest HP' - the sorter here is 'unit1.HP <= unit2.HP'.
+
 Instruction blocks may be considered to be the basic statement block of imperative-like programming languages. It consists of a linear sequence of individual statements, which are as follows:
 ACTION - makes the unit actually execute a game action, taking varargs parameters as needed
 SETVAR - sets one of the unit's internal variables
@@ -42,9 +46,11 @@ GOSUB  - moves to the head of another block, pushing the next instruction onto t
 
 As implied, a GOSUB statement acts like a normal function call, and will continue the next instruction of the parent after the subroutine exits; a GOTO acts like a normal jump, on exit it continues the next instruction of the grandparent (if any).
 
-On activating a leaf, there is a waiting time parameter which specifies the maximum time allowed for the current course of action (if any) to complete; if this time runs out execution is forcibly halted and moved to the new course, with all attendant side effects. The unit has access to a special internal variable with the current value of this interrupt clock. With most actions having variable time-to-cast, the incidence of forcible interrupts should be mostly avoidable.
+On activating a leaf, there is a waiting time block, a special type of instruction block that is barred from executing game time-consuming statements. It will return, in a special local variable, the maximum time allowed for the current course of action (if any) to complete. If this interrupt timer runs out execution is forcibly halted and moved to the new course, with all attendant side effects. The unit has access to a special internal variable with the current value of this interrupt clock. With most actions having variable time-to-cast, the incidence of forcible interrupts should be mostly avoidable.
 
 The functioning of this tree is as follows: continuously the current decision is made, which selects one of the leaves to be executed. The first time a leaf is selected, it computes its wait time and starts counting down. When the current course finishes or the clock zeros, whichever comes first, the block specified by the leaf is moved to, with an empty return stack. If the current course finishes without a new leaf being selected, and the current leaf does not specify execute-once per activation, it is simply executed again; if it does then the unit idles. To specify execute-once then fall-through, use a flag tested on an internal node.
+
+An ACTION statement will also specify a handler, which is a special type of instruction block, like the interrupt timer block, banned from executing time-consuming statements. This handler will be invoked whenever the countdown clock is (re)set by a newly executing block. This handler has special access in local variables to the parameters and components (cf) of the action being done, and may modify them, preferably at least to finish before the interrupt clock runs out.
 
 Actions
 -------
@@ -53,6 +59,16 @@ This is the main level that the game operates at. An action is some game-physica
 The charge and cooldown are stun-times before and after the skill takes effect. The act time may not be instantaneous, as in a multi-hit combo, but usually is. Spells that have non-immediate or enduring effects either place buffs on units or create virtual units for their spells - unless a skill specifies 'duration of holding' as the effect duration, the game effect time is divorced from the act time, which merely starts the chain of events in motion.
 
 Each action while in the 'act' phase has an internal script and at the appropriate times will invoke 'effects' which are the absolute lowest in the granularity hierarchy, an atomic update to the game state at the mechanics level. Most of the simpler actions will simply have one effect.
+
+Components
+----------
+Skills have a host of parameters and are fundamentally composed of combinable components that represent building blocks of spells. Other than including the obvious ones like 'damage' or 'inflict buff', it also includes mandatory attributes like 'casting time' or 'willpower cost', and optional add-on upgrades like 'evasion pierce'. These components are divided into primary and secondary categories.
+
+Primary category components are those that define the effect of a spell - 'fire damage' or 'inflict blind status'. The litmus test for this categorization is 'can this stand alone as a usable spell'. There will be a whole host of these components, for example in the basic damage category, a choice for different element, different area of effect and different power level.
+
+Secondary category components are add-ons, although some are mandatory. These will fall into a sub-category of 'powering components', whose job it is to supply the power (cf) to the primary (and other secondary) components. Some components may straddle the line on powering, such as a 'blood-cast' (damage self to cast), which will add to the spell's power.
+
+The mechanics of skill casting is as follows: the spell has a shared pool of power, that some components contribute to (like 'use X time to cast'), while others use from ('cause ice damage'). Different components have different power-to-effect formulas, usually sigmoidal, and components also interact pairwise to modify these formulas, either as synergy or interference.
 
 Elements
 --------
@@ -66,7 +82,7 @@ Affinities are given fixed starting points per character, but can be changed slo
 
 Mechanics
 ---------
-Innate statistics are as follows: for each element a character has an affinity that governs offensive power of skills, an accuracy and a speed at using aligned skills, and a defensive power against it. For each school, a character has a mastery level that also adjusts power output of skills. Then globally, a character has a stamina maximum (possibly regenerative power), a willpower maximum and an evasion value. Additional statistics regarding AI are not fixed at this moment.
+Innate statistics are as follows: for each element a character has an affinity that governs defensive power against it. For each school, a character has a mastery level that governs offensive output of skills, which as side effects include casting time. Then globally, a character has a willpower maximum (possibly independently, regenerative power) and base accuracy/evasion/speed values. Additional statistics regarding AI are not fixed at this moment.
 
 Every effect has a host of attributes to it, including power, delay and accuracy formulas, pierces and damage fraction in each element. Elemental defense is split into two parts: a straight damage reduction and a percentage resist. Defenses are layered in the order encountered towards the target, typically area-buff, personal-buff, armor then innate. Armor is envisioned as a quickly recharging shield that offers only reduction; innate defense should only provide resist, possibly a nominal reduction. Remember that reductions behind resists are magnified and so buffs giving resists are high-level spells.
 
@@ -74,9 +90,7 @@ A piercing effect negates the reductions and resists, usually on a percentage ba
 
 Characters have the ability to drop defenses against an incoming attack, for example if it's going to help you. This is probably going to be per-element, and global: if someone drops to take a cure, hit them with the time blast. Elemental shields will need an extra prerogative to be able to let an attack through.
 
-Stamina is this game's incarnation of hit points; except that in the Persona style, 'physical' exertions will cost you stamina. This is marked as 'spent' stamina, as opposed to 'lost' stamina from getting attacked. This distinction matters to restorative spells, where a lower level 'refresh' could only restore spent amounts, and a higher 'restore' is needed to recover actual damage. Willpower is your standard magic points, and WP-directed attacks are going to get common in the late game.
-
-Two universal innate character abilities are to interchange expenditure of these points: a 'blood-magic' type skill to spend hits on a spell and a 'last-chance' skill that keeps you standing at 0 hits, allowing for emergency healing. This functions as a fixed drain on remaining willpower and also a manashield if you still get whacked some more. 0 stamina/0 willpower is obviously a knockout.
+Willpower is this game's melding of both hit points and mana/spell points - there is no distinction between the two. There are two types of deductions from willpower - 'spent' willpower from powering spells and 'lost' willpower from being attacked. This divide matters to restorative spells, where a lower level 'refresh' (including innate regeneration) could only restore spent amounts, and a higher 'restore' is needed to recover actual damage.
 
 Skills
 ------
