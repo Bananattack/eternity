@@ -49,7 +49,7 @@ namespace Eternity {
         return t_branch;
     }
 
-    Condition* Node_Internal::getTest() const {
+    Predicate* Node_Internal::getTest() const {
         return test;
     }
 
@@ -65,7 +65,7 @@ namespace Eternity {
         return true;
     }
 
-    bool Node_Internal::setCondition(const Condition* new_test) {
+    bool Node_Internal::setTest(const Predicate* new_test) {
         test = new_test;
         modified = true;
         return true;
@@ -108,7 +108,7 @@ namespace Eternity {
         return true;
     }
 
-    bool Node_Filter::setCondition(const Filter* new_test) {
+    bool Node_Filter::setTest(const Filter* new_test) {
         test = new_test;
         modified = true;
         return true;

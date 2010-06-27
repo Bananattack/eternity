@@ -76,17 +76,17 @@ namespace Eternity {
     private:
         Node* f_branch;                     /* the node to test next on condition true */
         Node* t_branch;                     /* the node to test next on condition false */
-        Condition* test;                    /* the boolean logic statement to test */
+        Predicate* test;                    /* the boolean logic statement to test */
         const map<int,Unit*>* unit_set_b;   /* the set of units filtered through to this node */
         const set<int>* dunit_set_b;        /* the set of dirty units filtered through to this node */
     public:
         Node* getFBranch() const;
         Node* getTBranch() const;
-        Condition* getTest() const;
+        Predicate* getTest() const;
 
         bool setFBranch(const Node*);
         bool setTBranch(const Node*);
-        bool setCondition(const Condition*);
+        bool setTest(const Predicate*);
 
         bool evaluate(Unit&, Node*, const map<int,Unit*>*, const set<int>*);
     }
@@ -98,7 +98,7 @@ namespace Eternity {
         Node* t_branch;                     /* the node to test next on unit-set empty */
         Filter* test;                       /* the boolean logic filter to use */
         map<int,Unit*> unit_set;            /* the set of units filtered past this node */
-        set<int> dirty_unit_set;            /* the set of dirty units filtered past this node */
+        set<int> dunit_set;                 /* the set of dirty units filtered past this node */
 //        bool dirty;                         /* whether the variables named in the filter have changed */
     public:
         Node* getFBranch() const;
@@ -107,7 +107,7 @@ namespace Eternity {
 
         bool setFBranch(const Node*);
         bool setTBranch(const Node*);
-        bool setFilter(const Filter*);
+        bool setTest(const Filter*);
 
         bool evaluate(Unit&, Node*, const map<int,Unit*>*, const set<int>*);
     }
@@ -162,19 +162,19 @@ namespace Eternity {
     class Block_Interrupt:public Block {
     };
 
-/* a boolean-logic condition statement */
-    class Condition {
+/* a boolean-logic condition statement, implicitly framed in terms of the caller */
+    class Predicate {
     protected:
 /* TODO */
     };
 
 /* a boolean unit-selection filter */
-    class Filter:public Condition {
+    class Filter:public Predicate {
 /* TODO */
     }
 
 /* a boolean unit-comparison function */
-    class Comparer:public Condition {
+    class Comparer:public Predicate {
 /* TODO */
     }
 

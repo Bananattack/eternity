@@ -11,7 +11,7 @@ namespace Eternity {
     class Block;
         class Block_Timer;
         class Block_Interrupt;
-    class Condition;
+    class Predicate;
         class Filter;
         class Comparer;
     class Buff;
