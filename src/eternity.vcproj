@@ -170,14 +170,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\event.cpp"
-				>
-			</File>
-			<File
-				RelativePath=".\instruction.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\order.cpp"
 				>
 			</File>
@@ -196,15 +188,11 @@
 				>
 			</File>
 			<File
-				RelativePath=".\eternity.h"
+				RelativePath=".\battlefield.hpp"
 				>
 			</File>
 			<File
-				RelativePath=".\event.h"
-				>
-			</File>
-			<File
-				RelativePath=".\instruction.h"
+				RelativePath=".\eternity.hpp"
 				>
 			</File>
 			<File
@@ -212,7 +200,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\order.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\unit.h"
+				>
+			</File>
+			<File
+				RelativePath=".\unit.hpp"
 				>
 			</File>
 		</Filter>
